@@ -21,6 +21,11 @@ body {
   gap: 0.5rem;
 }
 
+.row {
+  display: flex;
+  gap: 0.5rem;
+}
+
 .status {
   margin: 0.75rem 0;
 }

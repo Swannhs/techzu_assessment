@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { apiClient } from "./api/client";
 import { MenuItem, Outlet } from "./api/types";
 import { HQPage } from "./pages/hq/HQPage";
+import { OutletPage } from "./pages/outlet/OutletPage";
 
 type Tab = "hq" | "outlet";
 
@@ -61,7 +62,7 @@ export function App() {
           onRefresh={refresh}
         />
       ) : (
-        <div className="card">Outlet screens coming in next commit.</div>
+        <OutletPage outletId={selectedOutletId} statusSetter={setStatus} />
       )}
     </div>
   );
