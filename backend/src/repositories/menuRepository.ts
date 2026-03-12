@@ -43,4 +43,45 @@ export class MenuRepository {
       data
     });
   }
+
+  createOutletAssignment(data: {
+    outletId: number;
+    menuItemId: number;
+    priceOverride?: Prisma.Decimal | null;
+    isActive: boolean;
+  }) {
+    return this.db.outletMenuItem.create({
+      data
+    });
+  }
+
+  findOutletAssignment(outletId: number, menuItemId: number) {
+    return this.db.outletMenuItem.findUnique({
+      where: {
+        outletId_menuItemId: {
+          outletId,
+          menuItemId
+        }
+      }
+    });
+  }
+
+  updateOutletAssignment(
+    outletId: number,
+    menuItemId: number,
+    payload: Partial<{
+      priceOverride: Prisma.Decimal | null;
+      isActive: boolean;
+    }>
+  ) {
+    return this.db.outletMenuItem.update({
+      where: {
+        outletId_menuItemId: {
+          outletId,
+          menuItemId
+        }
+      },
+      data: payload
+    });
+  }
 }

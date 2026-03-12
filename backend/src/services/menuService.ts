@@ -1,10 +1,12 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../config/prisma.js";
 import { MenuRepository } from "../repositories/menuRepository.js";
+import { OutletRepository } from "../repositories/outletRepository.js";
 import { ApiError } from "../utils/apiError.js";
 
 export class MenuService {
   private readonly menuRepository = new MenuRepository(prisma);
+  private readonly outletRepository = new OutletRepository(prisma);
 
   async createMenuItem(payload: {
     sku: string;
@@ -70,6 +72,85 @@ export class MenuService {
         : {}),
       ...(payload.stockDeductionUnits !== undefined
         ? { stockDeductionUnits: payload.stockDeductionUnits }
+        : {}),
+      ...(payload.isActive !== undefined ? { isActive: payload.isActive } : {})
+    });
+  }
+
+  async assignMenuItem(
+    outletId: number,
+    payload: {
+      menuItemId: number;
+      priceOverride?: number | null;
+      isActive: boolean;
+    }
+  ) {
+    const [outlet, menuItem] = await Promise.all([
+      this.outletRepository.findById(outletId),
+      this.menuRepository.findById(payload.menuItemId)
+    ]);
+
+    if (!outlet) {
+      throw new ApiError({
+        statusCode: 404,
+        code: "OUTLET_NOT_FOUND",
+        message: "Outlet not found"
+      });
+    }
+
+    if (!menuItem) {
+      throw new ApiError({
+        statusCode: 404,
+        code: "MENU_ITEM_NOT_FOUND",
+        message: "Menu item not found"
+      });
+    }
+
+    try {
+      return await this.menuRepository.createOutletAssignment({
+        outletId,
+        menuItemId: payload.menuItemId,
+        priceOverride:
+          payload.priceOverride === undefined || payload.priceOverride === null
+            ? null
+            : new Prisma.Decimal(payload.priceOverride),
+        isActive: payload.isActive
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+        throw new ApiError({
+          statusCode: 409,
+          code: "OUTLET_MENU_ITEM_EXISTS",
+          message: "Menu item already assigned to outlet"
+        });
+      }
+      throw error;
+    }
+  }
+
+  async updateOutletAssignment(
+    outletId: number,
+    menuItemId: number,
+    payload: {
+      priceOverride?: number | null;
+      isActive?: boolean;
+    }
+  ) {
+    const assignment = await this.menuRepository.findOutletAssignment(outletId, menuItemId);
+    if (!assignment) {
+      throw new ApiError({
+        statusCode: 404,
+        code: "OUTLET_MENU_ITEM_NOT_FOUND",
+        message: "Outlet menu item assignment not found"
+      });
+    }
+
+    return this.menuRepository.updateOutletAssignment(outletId, menuItemId, {
+      ...(payload.priceOverride !== undefined
+        ? {
+            priceOverride:
+              payload.priceOverride === null ? null : new Prisma.Decimal(payload.priceOverride)
+          }
         : {}),
       ...(payload.isActive !== undefined ? { isActive: payload.isActive } : {})
     });
