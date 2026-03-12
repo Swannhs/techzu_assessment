@@ -45,6 +45,9 @@ model OutletMenuItem {
   updatedAt     DateTime @updatedAt
   outlet        Outlet   @relation(fields: [outletId], references: [id], onDelete: Cascade)
   menuItem      MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+
+  @@unique([outletId, menuItemId])
+  @@index([outletId])
 }
 
 model Inventory {
@@ -55,6 +58,9 @@ model Inventory {
   updatedAt     DateTime @updatedAt
   outlet        Outlet   @relation(fields: [outletId], references: [id], onDelete: Cascade)
   menuItem      MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+
+  @@unique([outletId, menuItemId])
+  @@index([outletId, menuItemId])
 }
 
 model Sale {
@@ -66,6 +72,9 @@ model Sale {
   createdAt      DateTime  @default(now())
   outlet         Outlet    @relation(fields: [outletId], references: [id], onDelete: Restrict)
   saleItems      SaleItem[]
+
+  @@unique([outletId, receiptNumber])
+  @@index([outletId, createdAt])
 }
 
 model SaleItem {
@@ -78,6 +87,9 @@ model SaleItem {
   lineTotal         Decimal  @db.Decimal(12, 2)
   sale              Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
   menuItem          MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Restrict)
+
+  @@index([saleId])
+  @@index([menuItemId])
 }
 
 model ReceiptSequence {
