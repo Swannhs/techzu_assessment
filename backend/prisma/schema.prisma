@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Outlet {
+  id              Int               @id @default(autoincrement())
+  code            String            @unique @db.VarChar(30)
+  name            String            @db.VarChar(120)
+  location        String            @db.VarChar(200)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  outletMenuItems OutletMenuItem[]
+  inventories     Inventory[]
+  sales           Sale[]
+  receiptSequence ReceiptSequence?
+}
+
+model MenuItem {
+  id                  Int               @id @default(autoincrement())
+  sku                 String            @unique @db.VarChar(30)
+  name                String            @db.VarChar(120)
+  description         String?
+  basePrice           Decimal           @db.Decimal(12, 2)
+  stockDeductionUnits Int               @default(1)
+  isActive            Boolean           @default(true)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  outletMenuItems     OutletMenuItem[]
+  inventories         Inventory[]
+  saleItems           SaleItem[]
+}
+
+model OutletMenuItem {
+  id            Int      @id @default(autoincrement())
+  outletId      Int
+  menuItemId    Int
+  priceOverride Decimal? @db.Decimal(12, 2)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  outlet        Outlet   @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  menuItem      MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+}
+
+model Inventory {
+  id            Int      @id @default(autoincrement())
+  outletId      Int
+  menuItemId    Int
+  stockQuantity Int
+  updatedAt     DateTime @updatedAt
+  outlet        Outlet   @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  menuItem      MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+}
+
+model Sale {
+  id             BigInt    @id @default(autoincrement())
+  outletId       Int
+  receiptNumber  String    @db.VarChar(50)
+  subtotalAmount Decimal   @db.Decimal(12, 2)
+  totalAmount    Decimal   @db.Decimal(12, 2)
+  createdAt      DateTime  @default(now())
+  outlet         Outlet    @relation(fields: [outletId], references: [id], onDelete: Restrict)
+  saleItems      SaleItem[]
+}
+
+model SaleItem {
+  id                BigInt   @id @default(autoincrement())
+  saleId            BigInt
+  menuItemId        Int
+  itemNameSnapshot  String   @db.VarChar(120)
+  unitPriceSnapshot Decimal  @db.Decimal(12, 2)
+  quantity          Int
+  lineTotal         Decimal  @db.Decimal(12, 2)
+  sale              Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  menuItem          MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Restrict)
+}
+
+model ReceiptSequence {
+  outletId   Int      @id
+  lastNumber Int      @default(0)
+  updatedAt  DateTime @updatedAt
+  outlet     Outlet   @relation(fields: [outletId], references: [id], onDelete: Cascade)
+}

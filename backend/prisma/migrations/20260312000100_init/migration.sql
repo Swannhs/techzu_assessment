@@ -1,0 +1,94 @@
+CREATE TABLE "Outlet" (
+  "id" SERIAL NOT NULL,
+  "code" VARCHAR(30) NOT NULL,
+  "name" VARCHAR(120) NOT NULL,
+  "location" VARCHAR(200) NOT NULL,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "Outlet_pkey" PRIMARY KEY ("id")
+);
+
+CREATE TABLE "MenuItem" (
+  "id" SERIAL NOT NULL,
+  "sku" VARCHAR(30) NOT NULL,
+  "name" VARCHAR(120) NOT NULL,
+  "description" TEXT,
+  "basePrice" DECIMAL(12,2) NOT NULL,
+  "stockDeductionUnits" INTEGER NOT NULL DEFAULT 1,
+  "isActive" BOOLEAN NOT NULL DEFAULT true,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "MenuItem_pkey" PRIMARY KEY ("id")
+);
+
+CREATE TABLE "OutletMenuItem" (
+  "id" SERIAL NOT NULL,
+  "outletId" INTEGER NOT NULL,
+  "menuItemId" INTEGER NOT NULL,
+  "priceOverride" DECIMAL(12,2),
+  "isActive" BOOLEAN NOT NULL DEFAULT true,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "OutletMenuItem_pkey" PRIMARY KEY ("id")
+);
+
+CREATE TABLE "Inventory" (
+  "id" SERIAL NOT NULL,
+  "outletId" INTEGER NOT NULL,
+  "menuItemId" INTEGER NOT NULL,
+  "stockQuantity" INTEGER NOT NULL,
+  "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "Inventory_pkey" PRIMARY KEY ("id")
+);
+
+CREATE TABLE "Sale" (
+  "id" BIGSERIAL NOT NULL,
+  "outletId" INTEGER NOT NULL,
+  "receiptNumber" VARCHAR(50) NOT NULL,
+  "subtotalAmount" DECIMAL(12,2) NOT NULL,
+  "totalAmount" DECIMAL(12,2) NOT NULL,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "Sale_pkey" PRIMARY KEY ("id")
+);
+
+CREATE TABLE "SaleItem" (
+  "id" BIGSERIAL NOT NULL,
+  "saleId" BIGINT NOT NULL,
+  "menuItemId" INTEGER NOT NULL,
+  "itemNameSnapshot" VARCHAR(120) NOT NULL,
+  "unitPriceSnapshot" DECIMAL(12,2) NOT NULL,
+  "quantity" INTEGER NOT NULL,
+  "lineTotal" DECIMAL(12,2) NOT NULL,
+  CONSTRAINT "SaleItem_pkey" PRIMARY KEY ("id")
+);
+
+CREATE TABLE "ReceiptSequence" (
+  "outletId" INTEGER NOT NULL,
+  "lastNumber" INTEGER NOT NULL DEFAULT 0,
+  "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "ReceiptSequence_pkey" PRIMARY KEY ("outletId")
+);
+
+CREATE UNIQUE INDEX "Outlet_code_key" ON "Outlet"("code");
+CREATE UNIQUE INDEX "MenuItem_sku_key" ON "MenuItem"("sku");
+
+ALTER TABLE "OutletMenuItem" ADD CONSTRAINT "OutletMenuItem_outletId_fkey"
+FOREIGN KEY ("outletId") REFERENCES "Outlet"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "OutletMenuItem" ADD CONSTRAINT "OutletMenuItem_menuItemId_fkey"
+FOREIGN KEY ("menuItemId") REFERENCES "MenuItem"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE "Inventory" ADD CONSTRAINT "Inventory_outletId_fkey"
+FOREIGN KEY ("outletId") REFERENCES "Outlet"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Inventory" ADD CONSTRAINT "Inventory_menuItemId_fkey"
+FOREIGN KEY ("menuItemId") REFERENCES "MenuItem"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE "Sale" ADD CONSTRAINT "Sale_outletId_fkey"
+FOREIGN KEY ("outletId") REFERENCES "Outlet"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+ALTER TABLE "SaleItem" ADD CONSTRAINT "SaleItem_saleId_fkey"
+FOREIGN KEY ("saleId") REFERENCES "Sale"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "SaleItem" ADD CONSTRAINT "SaleItem_menuItemId_fkey"
+FOREIGN KEY ("menuItemId") REFERENCES "MenuItem"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+ALTER TABLE "ReceiptSequence" ADD CONSTRAINT "ReceiptSequence_outletId_fkey"
+FOREIGN KEY ("outletId") REFERENCES "Outlet"("id") ON DELETE CASCADE ON UPDATE CASCADE;
