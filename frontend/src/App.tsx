@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
 import { apiClient } from "./api/client";
-import { MenuItem, Outlet } from "./api/types";
+import {
+  MenuItem,
+  Outlet,
+  RevenueByOutletRow,
+  TopItemByOutletRow
+} from "./api/types";
 import { HQPage } from "./pages/hq/HQPage";
 import { OutletPage } from "./pages/outlet/OutletPage";
 
@@ -11,6 +16,8 @@ export function App() {
   const [status, setStatus] = useState("Loading...");
   const [outlets, setOutlets] = useState<Outlet[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [revenueByOutlet, setRevenueByOutlet] = useState<RevenueByOutletRow[]>([]);
+  const [topItems, setTopItems] = useState<TopItemByOutletRow[]>([]);
   const [selectedOutletId, setSelectedOutletId] = useState<number | null>(null);
 
   useEffect(() => {
@@ -19,12 +26,16 @@ export function App() {
 
   async function refresh() {
     try {
-      const [outletResult, menuResult] = await Promise.all([
+      const [outletResult, menuResult, revenueResult, topItemsResult] = await Promise.all([
         apiClient<Outlet[]>("/hq/outlets"),
-        apiClient<MenuItem[]>("/hq/menu-items")
+        apiClient<MenuItem[]>("/hq/menu-items"),
+        apiClient<RevenueByOutletRow[]>("/hq/reports/revenue-by-outlet"),
+        apiClient<TopItemByOutletRow[]>("/hq/reports/top-items-by-outlet")
       ]);
       setOutlets(outletResult);
       setMenuItems(menuResult);
+      setRevenueByOutlet(revenueResult);
+      setTopItems(topItemsResult);
       setSelectedOutletId((current) => current ?? outletResult[0]?.id ?? null);
       setStatus("Ready");
     } catch (error) {
@@ -58,6 +69,8 @@ export function App() {
         <HQPage
           outlets={outlets}
           menuItems={menuItems}
+          revenueByOutlet={revenueByOutlet}
+          topItems={topItems}
           selectedOutletId={selectedOutletId}
           onRefresh={refresh}
         />

@@ -1,15 +1,29 @@
 import { FormEvent, useState } from "react";
 import { apiClient } from "../../api/client";
-import { MenuItem, Outlet } from "../../api/types";
+import {
+  MenuItem,
+  Outlet,
+  RevenueByOutletRow,
+  TopItemByOutletRow
+} from "../../api/types";
 
 interface HQPageProps {
   outlets: Outlet[];
   menuItems: MenuItem[];
+  revenueByOutlet: RevenueByOutletRow[];
+  topItems: TopItemByOutletRow[];
   selectedOutletId: number | null;
   onRefresh: () => Promise<void>;
 }
 
-export function HQPage({ outlets, menuItems, selectedOutletId, onRefresh }: HQPageProps) {
+export function HQPage({
+  outlets,
+  menuItems,
+  revenueByOutlet,
+  topItems,
+  selectedOutletId,
+  onRefresh
+}: HQPageProps) {
   const [outletForm, setOutletForm] = useState({ code: "", name: "", location: "" });
   const [menuForm, setMenuForm] = useState({
     sku: "",
@@ -228,6 +242,31 @@ export function HQPage({ outlets, menuItems, selectedOutletId, onRefresh }: HQPa
               <button onClick={() => toggleMenuActive(item)}>
                 {item.isActive ? "Deactivate" : "Activate"}
               </button>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className="card">
+        <h2>Revenue by Outlet</h2>
+        <ul className="list">
+          {revenueByOutlet.map((row) => (
+            <li key={row.outletId}>
+              <strong>{row.outletCode}</strong>
+              <span>${Number(row.totalRevenue).toFixed(2)}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className="card wide">
+        <h2>Top Selling Items by Outlet</h2>
+        <ul className="list">
+          {topItems.map((row, index) => (
+            <li key={`${row.outletId}-${row.menuItemId}-${index}`}>
+              <strong>{row.outletCode}</strong>
+              <span>{row.itemName}</span>
+              <span>{row.totalQuantity} sold</span>
             </li>
           ))}
         </ul>

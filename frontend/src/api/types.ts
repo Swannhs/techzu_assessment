@@ -14,3 +14,20 @@ export interface MenuItem {
   stockDeductionUnits: number;
   isActive: boolean;
 }
+
+export interface RevenueByOutletRow {
+  outletId: number;
+  outletCode: string;
+  outletName: string;
+  totalRevenue: string;
+}
+
+export interface TopItemByOutletRow {
+  outletId: number;
+  outletCode: string;
+  outletName: string;
+  menuItemId: number;
+  itemName: string;
+  totalQuantity: number;
+  totalRevenue: string;
+}
