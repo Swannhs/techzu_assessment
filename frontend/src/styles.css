@@ -1,8 +1,78 @@
 body {
   margin: 0;
   font-family: "Segoe UI", sans-serif;
+  background: #f2f5f3;
+  color: #1e3029;
 }
 
 .shell {
+  padding: 1rem 1.5rem;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.toolbar {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.status {
+  margin: 0.75rem 0;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.card {
+  background: white;
+  border: 1px solid #dce5e1;
+  border-radius: 12px;
   padding: 1rem;
+}
+
+.wide {
+  grid-column: span 2;
+}
+
+.stack {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button {
+  border: 0;
+  border-radius: 8px;
+  background: #233f35;
+  color: #fff;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+}
+
+input,
+select {
+  border: 1px solid #c6d5cf;
+  border-radius: 8px;
+  padding: 0.45rem 0.55rem;
 }
