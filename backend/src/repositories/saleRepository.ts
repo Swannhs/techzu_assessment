@@ -38,4 +38,16 @@ export class SaleRepository {
   ) {
     return this.tx.saleItem.createMany({ data });
   }
+
+  async guardedDeductInventory(outletId: number, menuItemId: number, deductionUnits: number) {
+    const updated = await this.tx.$executeRaw`
+      UPDATE "Inventory"
+      SET "stockQuantity" = "stockQuantity" - ${deductionUnits},
+          "updatedAt" = NOW()
+      WHERE "outletId" = ${outletId}
+        AND "menuItemId" = ${menuItemId}
+        AND "stockQuantity" >= ${deductionUnits}
+    `;
+    return Number(updated);
+  }
 }

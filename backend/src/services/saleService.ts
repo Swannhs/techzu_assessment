@@ -1,6 +1,5 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../config/prisma.js";
-import { InventoryRepository } from "../repositories/inventoryRepository.js";
 import { MenuRepository } from "../repositories/menuRepository.js";
 import { OutletRepository } from "../repositories/outletRepository.js";
 import { SaleRepository } from "../repositories/saleRepository.js";
@@ -35,7 +34,6 @@ export class SaleService {
 
     const sale = await prisma.$transaction(async (tx) => {
       const menuRepository = new MenuRepository(tx);
-      const inventoryRepository = new InventoryRepository(tx);
       const saleRepository = new SaleRepository(tx);
 
       const resolvedItems: Array<{
@@ -49,44 +47,41 @@ export class SaleService {
 
       for (const [menuItemId, quantity] of groupedItems.entries()) {
         const assignment = await menuRepository.findOutletAssignment(outletId, menuItemId);
-        if (!assignment || !assignment.isActive) {
+        if (!assignment || !assignment.isActive || !assignment.menuItem.isActive) {
           throw new ApiError({
             statusCode: 400,
             code: "MENU_NOT_ASSIGNED",
             message: `Menu item ${menuItemId} is not assigned to outlet ${outletId}`
           });
         }
-
-        const inventory = await inventoryRepository.findByOutletAndMenuItem(
-          outletId,
-          menuItemId
+        const effectivePrice = Number(
+          assignment.priceOverride ?? assignment.menuItem.basePrice
         );
-        if (!inventory || inventory.stockQuantity <= 0) {
-          throw new ApiError({
-            statusCode: 409,
-            code: "INSUFFICIENT_STOCK",
-            message: `Insufficient stock for menu item ${menuItemId}`
-          });
-        }
-
-        const unitPrice = Number(assignment.priceOverride ?? 0) || 0;
-        const basePrice = Number((await menuRepository.findById(menuItemId))?.basePrice ?? 0);
-        const effectivePrice = unitPrice || basePrice;
+        const deductionUnits = assignment.menuItem.stockDeductionUnits * quantity;
 
         resolvedItems.push({
           menuItemId,
           quantity,
-          itemNameSnapshot: (await menuRepository.findById(menuItemId))?.name ?? "",
+          itemNameSnapshot: assignment.menuItem.name,
           unitPrice: effectivePrice,
           lineTotal: roundMoney(effectivePrice * quantity),
-          deductionUnits: quantity
+          deductionUnits
         });
+      }
 
-        await inventoryRepository.upsert(
+      for (const item of resolvedItems) {
+        const updated = await saleRepository.guardedDeductInventory(
           outletId,
-          menuItemId,
-          inventory.stockQuantity - quantity
+          item.menuItemId,
+          item.deductionUnits
         );
+        if (updated !== 1) {
+          throw new ApiError({
+            statusCode: 409,
+            code: "INSUFFICIENT_STOCK",
+            message: `Insufficient stock for menu item ${item.menuItemId}`
+          });
+        }
       }
 
       const subtotal = roundMoney(resolvedItems.reduce((sum, item) => sum + item.lineTotal, 0));

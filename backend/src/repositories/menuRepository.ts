@@ -62,6 +62,9 @@ export class MenuRepository {
           outletId,
           menuItemId
         }
+      },
+      include: {
+        menuItem: true
       }
     });
   }
