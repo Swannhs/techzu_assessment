@@ -1,4 +1,5 @@
 import { NextFunction, Request, Response } from "express";
+import { Prisma } from "@prisma/client";
 import { ApiError } from "../utils/apiError.js";
 
 export function errorHandler(
@@ -12,6 +13,14 @@ export function errorHandler(
       message: error.message,
       code: error.code,
       details: error.details
+    });
+    return;
+  }
+
+  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    response.status(400).json({
+      message: "Database request failed",
+      code: error.code
     });
     return;
   }

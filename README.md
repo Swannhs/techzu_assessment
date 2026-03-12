@@ -90,6 +90,7 @@ Frontend env example:
 ```env
 VITE_API_BASE_URL=http://localhost:4000/api
 ```
+See [frontend/.env.example](/workspaces/techzu_assessment/frontend/.env.example).
 
 ## Run with Docker
 
@@ -128,7 +129,7 @@ npm run dev
 ```bash
 cd frontend
 npm install
-echo "VITE_API_BASE_URL=http://localhost:4000/api" > .env
+cp .env.example .env
 npm run dev
 ```
 

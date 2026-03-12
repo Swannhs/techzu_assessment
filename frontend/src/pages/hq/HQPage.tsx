@@ -37,6 +37,7 @@ export function HQPage({
     priceOverride: ""
   });
   const [editingMenuId, setEditingMenuId] = useState<number | null>(null);
+  const [editingPrice, setEditingPrice] = useState("");
 
   async function handleCreateOutlet(event: FormEvent) {
     event.preventDefault();
@@ -233,11 +234,28 @@ export function HQPage({
               <span>{item.name}</span>
               <span>{item.isActive ? "Active" : "Inactive"}</span>
               {editingMenuId === item.id ? (
-                <button onClick={() => updateMenuPrice(item, prompt("New price", item.basePrice) ?? item.basePrice)}>
-                  Save Price
-                </button>
+                <div className="row">
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={editingPrice}
+                    onChange={(event) => setEditingPrice(event.target.value)}
+                  />
+                  <button
+                    onClick={() => updateMenuPrice(item, editingPrice || item.basePrice)}
+                  >
+                    Save Price
+                  </button>
+                </div>
               ) : (
-                <button onClick={() => setEditingMenuId(item.id)}>Edit Price</button>
+                <button
+                  onClick={() => {
+                    setEditingMenuId(item.id);
+                    setEditingPrice(item.basePrice);
+                  }}
+                >
+                  Edit Price
+                </button>
               )}
               <button onClick={() => toggleMenuActive(item)}>
                 {item.isActive ? "Deactivate" : "Activate"}
