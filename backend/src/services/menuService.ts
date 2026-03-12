@@ -155,4 +155,25 @@ export class MenuService {
       ...(payload.isActive !== undefined ? { isActive: payload.isActive } : {})
     });
   }
+
+  async listOutletAssignedMenu(outletId: number) {
+    const outlet = await this.outletRepository.findById(outletId);
+    if (!outlet) {
+      throw new ApiError({
+        statusCode: 404,
+        code: "OUTLET_NOT_FOUND",
+        message: "Outlet not found"
+      });
+    }
+
+    const assignments = await this.menuRepository.listAssignedOutletMenu(outletId);
+    return assignments.map((assignment) => ({
+      id: assignment.menuItem.id,
+      sku: assignment.menuItem.sku,
+      name: assignment.menuItem.name,
+      description: assignment.menuItem.description,
+      price: assignment.priceOverride ?? assignment.menuItem.basePrice,
+      stockDeductionUnits: assignment.menuItem.stockDeductionUnits
+    }));
+  }
 }

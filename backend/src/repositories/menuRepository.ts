@@ -84,4 +84,24 @@ export class MenuRepository {
       data: payload
     });
   }
+
+  listAssignedOutletMenu(outletId: number) {
+    return this.db.outletMenuItem.findMany({
+      where: {
+        outletId,
+        isActive: true,
+        menuItem: {
+          isActive: true
+        }
+      },
+      include: {
+        menuItem: true
+      },
+      orderBy: {
+        menuItem: {
+          name: "asc"
+        }
+      }
+    });
+  }
 }
