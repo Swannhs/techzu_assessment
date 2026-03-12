@@ -9,6 +9,10 @@ import {
   assignMenuItemToOutlet,
   updateAssignedMenuItem
 } from "../controllers/hqAssignmentController.js";
+import {
+  getRevenueByOutlet,
+  getTopItemsByOutlet
+} from "../controllers/hqReportController.js";
 import { createOutlet, listOutlets } from "../controllers/hqOutletController.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
@@ -25,3 +29,5 @@ hqRoutes.put(
   "/outlets/:outletId/menu-items/:menuItemId",
   asyncHandler(updateAssignedMenuItem)
 );
+hqRoutes.get("/reports/revenue-by-outlet", asyncHandler(getRevenueByOutlet));
+hqRoutes.get("/reports/top-items-by-outlet", asyncHandler(getTopItemsByOutlet));
