@@ -84,8 +84,11 @@ export class SaleService {
         }
       }
 
+      const lockedSequence = await saleRepository.lockReceiptSequence(outletId);
+      const nextReceiptNumber = lockedSequence.lastNumber + 1;
+      await saleRepository.updateReceiptSequence(outletId, nextReceiptNumber);
+      const receiptNumber = `${outlet.code}-${String(nextReceiptNumber).padStart(6, "0")}`;
       const subtotal = roundMoney(resolvedItems.reduce((sum, item) => sum + item.lineTotal, 0));
-      const receiptNumber = await saleRepository.nextReceiptNumber(outletId, outlet.code);
 
       const saleHeader = await saleRepository.createSale({
         outletId,

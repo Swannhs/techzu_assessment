@@ -3,20 +3,6 @@ import { Prisma } from "@prisma/client";
 export class SaleRepository {
   constructor(private readonly tx: Prisma.TransactionClient) {}
 
-  async nextReceiptNumber(outletId: number, outletCode: string) {
-    const latestSale = await this.tx.sale.findFirst({
-      where: { outletId },
-      orderBy: { id: "desc" },
-      select: { receiptNumber: true }
-    });
-
-    const lastSeq = latestSale
-      ? Number(latestSale.receiptNumber.split("-").pop() ?? "0")
-      : 0;
-    const nextSeq = lastSeq + 1;
-    return `${outletCode}-${String(nextSeq).padStart(6, "0")}`;
-  }
-
   createSale(data: {
     outletId: number;
     receiptNumber: string;
@@ -49,5 +35,29 @@ export class SaleRepository {
         AND "stockQuantity" >= ${deductionUnits}
     `;
     return Number(updated);
+  }
+
+  async lockReceiptSequence(outletId: number) {
+    await this.tx.$executeRaw`
+      INSERT INTO "ReceiptSequence" ("outletId", "lastNumber", "updatedAt")
+      VALUES (${outletId}, 0, NOW())
+      ON CONFLICT ("outletId") DO NOTHING
+    `;
+
+    const rows = await this.tx.$queryRaw<Array<{ outletId: number; lastNumber: number }>>`
+      SELECT "outletId", "lastNumber"
+      FROM "ReceiptSequence"
+      WHERE "outletId" = ${outletId}
+      FOR UPDATE
+    `;
+
+    return rows[0];
+  }
+
+  updateReceiptSequence(outletId: number, lastNumber: number) {
+    return this.tx.receiptSequence.update({
+      where: { outletId },
+      data: { lastNumber }
+    });
   }
 }
