@@ -1,29 +1,31 @@
 import { Request, Response } from "express";
+import type {
+  AssignMenuItemRequestDto,
+  UpdateOutletAssignmentRequestDto
+} from "../dtos/hqDtos.js";
+import { toOutletMenuAssignmentResponseDto } from "../dtos/hqDtos.js";
 import { MenuService } from "../services/menuService.js";
-import { validate } from "../utils/validate.js";
-import { outletMenuItemParamSchema, outletIdParamSchema } from "../validators/commonValidators.js";
-import {
-  assignMenuItemSchema,
-  updateOutletAssignmentSchema
-} from "../validators/hqValidators.js";
+import { getValidatedRequest } from "../middlewares/validateRequest.js";
+import type { OutletIdParams, OutletMenuItemParams } from "../validators/commonValidators.js";
 
 const menuService = new MenuService();
 
-export async function assignMenuItemToOutlet(request: Request, response: Response) {
-  const params = validate(outletIdParamSchema, request.params);
-  const payload = validate(assignMenuItemSchema, request.body);
+export async function assignMenuItemToOutlet(_request: Request, response: Response) {
+  const { params, body } = getValidatedRequest<OutletIdParams, AssignMenuItemRequestDto>(response);
+  const payload = body;
 
   const result = await menuService.assignMenuItem(params.outletId, {
     ...payload,
     isActive: payload.isActive ?? true
   });
 
-  response.status(201).json(result);
+  response.status(201).json(toOutletMenuAssignmentResponseDto(result));
 }
 
-export async function updateAssignedMenuItem(request: Request, response: Response) {
-  const params = validate(outletMenuItemParamSchema, request.params);
-  const payload = validate(updateOutletAssignmentSchema, request.body);
+export async function updateAssignedMenuItem(_request: Request, response: Response) {
+  const { params, body } =
+    getValidatedRequest<OutletMenuItemParams, UpdateOutletAssignmentRequestDto>(response);
+  const payload = body;
 
   const result = await menuService.updateOutletAssignment(
     params.outletId,
@@ -31,5 +33,5 @@ export async function updateAssignedMenuItem(request: Request, response: Respons
     payload
   );
 
-  response.json(result);
+  response.json(toOutletMenuAssignmentResponseDto(result));
 }

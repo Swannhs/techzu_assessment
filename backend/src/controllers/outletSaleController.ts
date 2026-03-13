@@ -1,14 +1,17 @@
 import { Request, Response } from "express";
+import type {
+  CreateSaleRequestDto,
+  OutletIdRequestDto
+} from "../dtos/outletDtos.js";
+import { toSaleResponseDto } from "../dtos/outletDtos.js";
 import { SaleService } from "../services/saleService.js";
-import { validate } from "../utils/validate.js";
-import { outletIdParamSchema } from "../validators/commonValidators.js";
-import { createSaleSchema } from "../validators/outletValidators.js";
+import { getValidatedRequest } from "../middlewares/validateRequest.js";
 
 const saleService = new SaleService();
 
-export async function createOutletSale(request: Request, response: Response) {
-  const params = validate(outletIdParamSchema, request.params);
-  const payload = validate(createSaleSchema, request.body);
+export async function createOutletSale(_request: Request, response: Response) {
+  const { params, body } = getValidatedRequest<OutletIdRequestDto, CreateSaleRequestDto>(response);
+  const payload = body;
   const result = await saleService.createSale(params.outletId, payload);
-  response.status(201).json(result);
+  response.status(201).json(toSaleResponseDto(result));
 }

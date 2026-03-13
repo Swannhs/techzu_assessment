@@ -1,20 +1,27 @@
 import { Request, Response } from "express";
+import type {
+  InventoryAdjustmentRequestDto,
+  OutletIdRequestDto
+} from "../dtos/outletDtos.js";
+import {
+  toInventoryAdjustmentResponseDto,
+  toInventoryItemResponseDto
+} from "../dtos/outletDtos.js";
 import { OutletService } from "../services/outletService.js";
-import { validate } from "../utils/validate.js";
-import { outletIdParamSchema } from "../validators/commonValidators.js";
-import { inventoryAdjustmentSchema } from "../validators/outletValidators.js";
+import { getValidatedRequest } from "../middlewares/validateRequest.js";
 
 const outletService = new OutletService();
 
-export async function getOutletInventory(request: Request, response: Response) {
-  const params = validate(outletIdParamSchema, request.params);
+export async function getOutletInventory(_request: Request, response: Response) {
+  const { params } = getValidatedRequest<OutletIdRequestDto>(response);
   const result = await outletService.listInventory(params.outletId);
-  response.json(result);
+  response.json(result.map(toInventoryItemResponseDto));
 }
 
-export async function adjustOutletInventory(request: Request, response: Response) {
-  const params = validate(outletIdParamSchema, request.params);
-  const payload = validate(inventoryAdjustmentSchema, request.body);
+export async function adjustOutletInventory(_request: Request, response: Response) {
+  const { params, body } =
+    getValidatedRequest<OutletIdRequestDto, InventoryAdjustmentRequestDto>(response);
+  const payload = body;
   const result = await outletService.adjustInventory(params.outletId, payload);
-  response.json(result);
+  response.json(toInventoryAdjustmentResponseDto(result));
 }

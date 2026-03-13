@@ -122,14 +122,6 @@ export class SaleService {
       });
     }
 
-    return {
-      ...sale,
-      id: sale.id.toString(),
-      saleItems: sale.saleItems.map((item) => ({
-        ...item,
-        id: item.id.toString(),
-        saleId: item.saleId.toString()
-      }))
-    };
+    return sale;
   }
 }

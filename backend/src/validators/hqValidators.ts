@@ -45,3 +45,10 @@ export const updateOutletAssignmentSchema = z
 export const topItemsReportQuerySchema = z.object({
   outletId: z.coerce.number().int().positive().optional()
 });
+
+export type CreateOutletInput = z.infer<typeof createOutletSchema>;
+export type CreateMenuItemInput = z.infer<typeof createMenuItemSchema>;
+export type UpdateMenuItemInput = z.infer<typeof updateMenuItemSchema>;
+export type AssignMenuItemInput = z.infer<typeof assignMenuItemSchema>;
+export type UpdateOutletAssignmentInput = z.infer<typeof updateOutletAssignmentSchema>;
+export type TopItemsReportQuery = z.infer<typeof topItemsReportQuerySchema>;

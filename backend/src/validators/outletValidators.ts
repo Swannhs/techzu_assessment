@@ -16,3 +16,6 @@ export const createSaleSchema = z.object({
     )
     .min(1)
 });
+
+export type InventoryAdjustmentInput = z.infer<typeof inventoryAdjustmentSchema>;
+export type CreateSaleInput = z.infer<typeof createSaleSchema>;
