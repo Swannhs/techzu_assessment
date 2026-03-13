@@ -1,0 +1,102 @@
+name: Deploy To EC2
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: deploy-ec2-production
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate Before Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Run backend tests
+        working-directory: backend
+        run: npm test
+
+      - name: Run frontend tests
+        working-directory: frontend
+        run: npm test
+
+      - name: Build backend
+        working-directory: backend
+        run: npm run build
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+
+  deploy:
+    name: Deploy Application
+    runs-on: ubuntu-latest
+    needs:
+      - validate
+    environment: production
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Prepare deployment archive
+        run: |
+          tar \
+            --exclude=.git \
+            --exclude=.github \
+            --exclude=backend/node_modules \
+            --exclude=frontend/node_modules \
+            --exclude=backend/dist \
+            --exclude=frontend/dist \
+            --exclude=backend/coverage \
+            --exclude=frontend/coverage \
+            --exclude=backend/*.tsbuildinfo \
+            --exclude=frontend/*.tsbuildinfo \
+            -czf "/tmp/fnb-hq-${GITHUB_SHA}.tar.gz" .
+
+      - name: Configure SSH
+        env:
+          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+          EC2_KNOWN_HOSTS: ${{ secrets.EC2_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$EC2_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "$EC2_KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      - name: Upload release archive
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+        run: |
+          scp "/tmp/fnb-hq-${GITHUB_SHA}.tar.gz" "${EC2_USER}@${EC2_HOST}:/tmp/fnb-hq-${GITHUB_SHA}.tar.gz"
+
+      - name: Run remote deployment
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+          EC2_APP_DIR: ${{ vars.EC2_APP_DIR }}
+        run: |
+          ssh "${EC2_USER}@${EC2_HOST}" \
+            "APP_ROOT='${EC2_APP_DIR:-/opt/fnb-hq}' bash -s -- '${GITHUB_SHA}' '/tmp/fnb-hq-${GITHUB_SHA}.tar.gz'" \
+            < deploy/ec2/remote-deploy.sh

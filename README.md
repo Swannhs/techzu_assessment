@@ -98,7 +98,8 @@ CLIENT_ORIGIN=http://localhost:5173
 Frontend env example:
 
 ```env
-VITE_API_BASE_URL=http://localhost:4000/api
+VITE_API_BASE_URL=/api
+VITE_PROXY_TARGET=http://localhost:4000
 ```
 
 See [frontend/.env.example](/workspaces/techzu_assessment/frontend/.env.example).
@@ -146,6 +147,163 @@ This mode uses:
 - backend compiled `prod` image
 - frontend static assets served by Nginx
 - backend healthcheck before frontend startup
+
+## EC2 Deployment
+
+This repo includes a dedicated single-instance EC2 deployment stack:
+
+- [`docker/compose.ec2.yml`](/workspaces/techzu_assessment/docker/compose.ec2.yml)
+- [`.env.ec2.example`](/workspaces/techzu_assessment/.env.ec2.example)
+- [`deploy/ec2/deploy.sh`](/workspaces/techzu_assessment/deploy/ec2/deploy.sh)
+- [`deploy/ec2/remote-deploy.sh`](/workspaces/techzu_assessment/deploy/ec2/remote-deploy.sh)
+- [`.github/workflows/ci.yml`](/workspaces/techzu_assessment/.github/workflows/ci.yml)
+- [`.github/workflows/deploy-ec2.yml`](/workspaces/techzu_assessment/.github/workflows/deploy-ec2.yml)
+
+Recommended shape:
+
+- one Linux EC2 instance
+- Docker Engine + Docker Compose plugin installed
+- only the frontend container exposed publicly on port `80`
+- backend and PostgreSQL kept private inside the Docker network
+
+### 1. Prepare the EC2 instance
+
+Recommended inbound rules:
+
+- `22/tcp` from your own IP only
+- `80/tcp` from the internet
+- `443/tcp` from the internet if you later add TLS
+
+### 2. Copy the project to the instance
+
+```bash
+git clone <your-repo-url>
+cd techzu_assessment
+```
+
+### 3. Create the EC2 environment file
+
+```bash
+cp .env.ec2.example .env.ec2
+```
+
+Example:
+
+```env
+POSTGRES_DB=fnb_hq
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=use_a_strong_password_here
+DATABASE_URL=postgresql://postgres:use_a_strong_password_here@postgres:5432/fnb_hq?schema=public
+CLIENT_ORIGIN=http://YOUR_EC2_PUBLIC_DNS
+PUBLIC_HTTP_PORT=80
+```
+
+Replace `YOUR_EC2_PUBLIC_DNS` with the actual public DNS name or domain for the instance.
+
+Create the persistent deployment location:
+
+```bash
+sudo mkdir -p /opt/fnb-hq/shared
+sudo chown -R $USER:$USER /opt/fnb-hq
+cp .env.ec2 /opt/fnb-hq/shared/.env.ec2
+```
+
+### 4. Start the stack
+
+First deployment with seed data:
+
+```bash
+./deploy/ec2/deploy.sh --seed
+```
+
+Subsequent deployments:
+
+```bash
+./deploy/ec2/deploy.sh
+```
+
+Manual equivalent command:
+
+```bash
+docker compose --env-file .env.ec2 -f docker/compose.ec2.yml up -d --build
+```
+
+### 5. Verify the deployment
+
+```bash
+docker compose --env-file .env.ec2 -f docker/compose.ec2.yml ps
+docker compose --env-file .env.ec2 -f docker/compose.ec2.yml logs -f
+```
+
+The application should then be reachable at:
+
+- `http://YOUR_EC2_PUBLIC_DNS`
+
+### EC2 deployment notes
+
+- PostgreSQL is not exposed publicly in the EC2 compose file.
+- The backend is not exposed publicly in the EC2 compose file.
+- The frontend Nginx container serves the React app and proxies `/api` requests internally to the backend container.
+- Prisma migrations run automatically when the backend container starts.
+- Seed data should usually be run only on the first deployment.
+
+## CI/CD To EC2
+
+The repository now includes:
+
+- `CI` workflow for tests and builds on pull requests and pushes to `main`
+- `Deploy To EC2` workflow for production deployment on pushes to `main` or manual trigger
+
+Deployment flow:
+
+1. GitHub Actions checks out the repository
+2. backend tests run
+3. frontend tests run
+4. backend and frontend builds run
+5. the repository is packaged as a release archive
+6. the archive is uploaded to EC2 over SSH
+7. the EC2 host extracts the release into `/opt/fnb-hq/releases/<git-sha>`
+8. Docker Compose rebuilds and restarts the application
+9. `/opt/fnb-hq/current` is updated to the latest release
+
+### GitHub repository secrets
+
+Add these repository or environment secrets:
+
+- `EC2_HOST`: public IP or DNS of the EC2 instance
+- `EC2_USER`: SSH user, for example `ubuntu` or `ec2-user`
+- `EC2_SSH_KEY`: private SSH key used by GitHub Actions
+- `EC2_KNOWN_HOSTS`: output of `ssh-keyscan -H <your-ec2-host>`
+
+Optional GitHub environment variable:
+
+- `EC2_APP_DIR`: defaults to `/opt/fnb-hq`
+
+### EC2 one-time preparation for CI/CD
+
+Install Docker and Docker Compose plugin on the instance, then prepare the app directory:
+
+```bash
+sudo mkdir -p /opt/fnb-hq/shared
+sudo chown -R $USER:$USER /opt/fnb-hq
+```
+
+Create the persistent environment file used by remote deployments:
+
+```bash
+cat > /opt/fnb-hq/shared/.env.ec2 <<'EOF'
+POSTGRES_DB=fnb_hq
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=use_a_strong_password_here
+DATABASE_URL=postgresql://postgres:use_a_strong_password_here@postgres:5432/fnb_hq?schema=public
+CLIENT_ORIGIN=http://YOUR_EC2_PUBLIC_DNS
+PUBLIC_HTTP_PORT=80
+EOF
+```
+
+### Manual deployment trigger
+
+You can deploy either by pushing to `main` or by using the `Deploy To EC2` workflow manually from the GitHub Actions UI.
 
 ## Running Locally (without Docker)
 
