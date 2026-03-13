@@ -242,25 +242,79 @@ This keeps validation, transport mapping, business logic, and data access separa
 
 ## API Endpoints
 
-### HQ
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| `POST` | `/api/hq/outlets` | Create a new outlet |
+| `GET` | `/api/hq/outlets` | List all outlets |
+| `POST` | `/api/hq/menu-items` | Create a master menu item |
+| `GET` | `/api/hq/menu-items` | List master menu items |
+| `GET` | `/api/hq/menu-items/:id` | Get one master menu item |
+| `PUT` | `/api/hq/menu-items/:id` | Update a master menu item |
+| `POST` | `/api/hq/outlets/:outletId/menu-items` | Assign a menu item to an outlet |
+| `PUT` | `/api/hq/outlets/:outletId/menu-items/:menuItemId` | Update assignment status or price override |
+| `GET` | `/api/hq/reports/revenue-by-outlet` | Return total revenue by outlet |
+| `GET` | `/api/hq/reports/top-items-by-outlet` | Return top five selling items per outlet |
+| `GET` | `/api/outlets/:outletId/menu` | Return menu items assigned to the outlet |
+| `GET` | `/api/outlets/:outletId/inventory` | Return outlet inventory |
+| `POST` | `/api/outlets/:outletId/inventory/adjust` | Adjust outlet stock manually |
+| `POST` | `/api/outlets/:outletId/sales` | Create a multi-item sale for an outlet |
 
-- `POST /api/hq/outlets`
-- `GET /api/hq/outlets`
-- `POST /api/hq/menu-items`
-- `GET /api/hq/menu-items`
-- `GET /api/hq/menu-items/:id`
-- `PUT /api/hq/menu-items/:id`
-- `POST /api/hq/outlets/:outletId/menu-items`
-- `PUT /api/hq/outlets/:outletId/menu-items/:menuItemId`
-- `GET /api/hq/reports/revenue-by-outlet`
-- `GET /api/hq/reports/top-items-by-outlet`
+### Example Request: Create Menu Item
 
-### Outlet
+```json
+{
+  "sku": "BRG-005",
+  "name": "Smoky Beef Burger",
+  "description": "Burger with smoked mayo and cheddar",
+  "basePrice": 15.5,
+  "stockDeductionUnits": 1,
+  "isActive": true
+}
+```
 
-- `GET /api/outlets/:outletId/menu`
-- `GET /api/outlets/:outletId/inventory`
-- `POST /api/outlets/:outletId/inventory/adjust`
-- `POST /api/outlets/:outletId/sales`
+### Example Request: Create Sale
+
+```json
+{
+  "items": [
+    { "menuItemId": 1, "quantity": 2 },
+    { "menuItemId": 3, "quantity": 1 }
+  ]
+}
+```
+
+### Example Response: Create Sale
+
+```json
+{
+  "id": "1",
+  "outletId": 1,
+  "receiptNumber": "OUTLET01-000001",
+  "subtotalAmount": "30.75",
+  "totalAmount": "30.75",
+  "createdAt": "2026-03-13T00:00:00.000Z",
+  "saleItems": [
+    {
+      "id": "1",
+      "saleId": "1",
+      "menuItemId": 1,
+      "itemNameSnapshot": "Classic Burger",
+      "unitPriceSnapshot": "13.00",
+      "quantity": 2,
+      "lineTotal": "26.00"
+    },
+    {
+      "id": "2",
+      "saleId": "1",
+      "menuItemId": 3,
+      "itemNameSnapshot": "Iced Lemon Tea",
+      "unitPriceSnapshot": "4.75",
+      "quantity": 1,
+      "lineTotal": "4.75"
+    }
+  ]
+}
+```
 
 ## Testing
 
