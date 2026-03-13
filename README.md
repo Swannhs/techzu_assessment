@@ -62,7 +62,17 @@ This project provides:
   docs/
     architecture.md
     erd.md
-  docker-compose.yml
+  docker/
+    compose.yml
+    compose.dev.yml
+    compose.prod.yml
+    backend/
+      Dockerfile.dev
+      Dockerfile.prod
+    frontend/
+      Dockerfile.dev
+      Dockerfile.prod
+      nginx.conf
   README.md
 ```
 
@@ -92,16 +102,16 @@ VITE_API_BASE_URL=http://localhost:4000/api
 ```
 See [frontend/.env.example](/workspaces/techzu_assessment/frontend/.env.example).
 
-## Run with Docker
+## Run with Docker (Local Development)
 
 ```bash
-docker compose up --build
+docker compose -f docker/compose.yml -f docker/compose.dev.yml up --build
 ```
 
-After services are up:
+After services are up (first run):
 
 ```bash
-docker compose exec backend npm run prisma:seed
+docker compose -f docker/compose.yml -f docker/compose.dev.yml exec backend npm run prisma:seed
 ```
 
 URLs:
@@ -109,6 +119,30 @@ URLs:
 - Frontend: `http://localhost:5173`
 - Backend: `http://localhost:4000/api`
 - PostgreSQL: `localhost:5432`
+
+This mode uses:
+
+- backend `dev` target (`tsx watch`)
+- frontend `dev` target (`vite dev`)
+- bind mounts for live code reload
+
+## Run with Docker (Production-like)
+
+```bash
+docker compose -f docker/compose.yml -f docker/compose.prod.yml up --build
+```
+
+URLs:
+
+- Frontend: `http://localhost:8080`
+- Backend: `http://localhost:4000/api`
+- PostgreSQL: `localhost:5432`
+
+This mode uses:
+
+- backend compiled `prod` image
+- frontend static assets served by Nginx
+- backend healthcheck before frontend startup
 
 ## Local Development
 

@@ -5,8 +5,6 @@ services:
       POSTGRES_DB: fnb_hq
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-    ports:
-      - "5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d fnb_hq"]
       interval: 5s
@@ -14,30 +12,27 @@ services:
       retries: 20
     volumes:
       - postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
 
   backend:
     build:
-      context: ./backend
+      context: ../backend
+      dockerfile: ../docker/backend/Dockerfile.prod
     environment:
-      NODE_ENV: development
       PORT: 4000
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/fnb_hq?schema=public
-      CLIENT_ORIGIN: http://localhost:5173
     depends_on:
       postgres:
         condition: service_healthy
-    ports:
-      - "4000:4000"
+    restart: unless-stopped
 
   frontend:
     build:
-      context: ./frontend
-    environment:
-      VITE_API_BASE_URL: http://localhost:4000/api
+      context: ..
+      dockerfile: docker/frontend/Dockerfile.prod
     depends_on:
       - backend
-    ports:
-      - "5173:5173"
+    restart: unless-stopped
 
 volumes:
   postgres-data:
