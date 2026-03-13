@@ -10,7 +10,7 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate deploy",
     "prisma:seed": "prisma db seed",
-    "test": "DATABASE_URL=${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/fnb_hq_test?schema=public} vitest run"
+    "test": "DATABASE_URL=${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/fnb_hq_test?schema=public} node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config jest.config.cjs --runInBand"
   },
   "dependencies": {
     "@prisma/client": "^6.5.0",
@@ -24,11 +24,13 @@
   "devDependencies": {
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.1",
+    "@types/jest": "^30.0.0",
     "@types/morgan": "^1.9.9",
     "@types/node": "^22.13.10",
+    "jest": "^30.2.0",
     "prisma": "^6.5.0",
+    "ts-jest": "^29.4.4",
     "tsx": "^4.19.3",
-    "typescript": "^5.8.2",
-    "vitest": "^3.0.8"
+    "typescript": "^5.8.2"
   }
 }
