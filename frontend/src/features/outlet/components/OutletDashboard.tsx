@@ -13,6 +13,10 @@ import {
 } from "../../../redux/slices/outletSlice";
 import { inventoryFormSchema, saleLineSchema } from "../validation/outletSchemas";
 
+function isPositiveIntegerInput(value: string) {
+  return value === "" || /^\d*$/.test(value);
+}
+
 export function OutletDashboard() {
   const dispatch = useAppDispatch();
   const { notifyError, runWithFeedback } = useApiFeedback();
@@ -24,7 +28,7 @@ export function OutletDashboard() {
 
   const [inventoryForm, setInventoryForm] = useState({
     menuItemId: "",
-    quantityDelta: "0",
+    quantityDelta: "",
     reason: ""
   });
   const [saleItems, setSaleItems] = useState([{ menuItemId: "", quantity: "1" }]);
@@ -56,7 +60,7 @@ export function OutletDashboard() {
 
     const { data: normalizedPayload, errors } = await validateWithSchema(inventoryFormSchema, {
       menuItemId: Number(inventoryForm.menuItemId),
-      quantityDelta: Number(inventoryForm.quantityDelta),
+      quantityDelta: inventoryForm.quantityDelta === "" ? "" : Number(inventoryForm.quantityDelta),
       reason: inventoryForm.reason
     });
     if (!normalizedPayload) {
@@ -74,7 +78,7 @@ export function OutletDashboard() {
           reason: normalizedPayload.reason || undefined
         })
       ).unwrap();
-      setInventoryForm({ menuItemId: "", quantityDelta: "0", reason: "" });
+      setInventoryForm({ menuItemId: "", quantityDelta: "", reason: "" });
       setInventoryErrors({});
     }, "Inventory adjusted");
   }
@@ -171,7 +175,28 @@ export function OutletDashboard() {
             ))}
           </select>
           <FormError message={inventoryErrors.menuItemId} />
-          <input className={`field ${inventoryErrors.quantityDelta ? "field-error" : ""}`} type="number" value={inventoryForm.quantityDelta} onChange={(event) => setInventoryForm({ ...inventoryForm, quantityDelta: event.target.value })} />
+          <input
+            className={`field field-number ${inventoryErrors.quantityDelta ? "field-error" : ""}`}
+            type="number"
+            min="1"
+            inputMode="numeric"
+            placeholder="Quantity"
+            value={inventoryForm.quantityDelta}
+            onKeyDown={(event) => {
+              if (["-", "+", "e", "E", "."].includes(event.key)) {
+                event.preventDefault();
+              }
+            }}
+            onChange={(event) => {
+              const nextValue = event.target.value;
+
+              if (!isPositiveIntegerInput(nextValue)) {
+                return;
+              }
+
+              setInventoryForm({ ...inventoryForm, quantityDelta: nextValue });
+            }}
+          />
           <FormError message={inventoryErrors.quantityDelta} />
           <input className="field" placeholder="Reason" value={inventoryForm.reason} onChange={(event) => setInventoryForm({ ...inventoryForm, reason: event.target.value })} />
           <button
@@ -257,9 +282,11 @@ export function OutletDashboard() {
           </div>
         ) : null}
 
-        <div className="mt-4 rounded-2xl border border-amber-200 bg-gradient-to-r from-peach to-[#f7ebdf] px-4 py-3 text-sm text-ink">
-          Latest receipt: <span className="font-bold">{lastReceipt}</span>
-        </div>
+        {lastReceipt ? (
+          <div className="mt-4 rounded-2xl border border-amber-200 bg-gradient-to-r from-peach to-[#f7ebdf] px-4 py-3 text-sm text-ink">
+            Latest receipt: <span className="font-bold">{lastReceipt}</span>
+          </div>
+        ) : null}
       </Panel>
     </div>
   );

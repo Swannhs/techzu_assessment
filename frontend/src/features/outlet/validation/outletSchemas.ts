@@ -9,9 +9,9 @@ export const inventoryFormSchema = yup.object({
     .required("Select an item"),
   quantityDelta: yup
     .number()
-    .typeError("Quantity delta must be a non-zero integer")
-    .integer("Quantity delta must be a non-zero integer")
-    .notOneOf([0], "Quantity delta must be a non-zero integer")
+    .typeError("Quantity must be an integer >= 1")
+    .integer("Quantity must be an integer >= 1")
+    .min(1, "Quantity must be an integer >= 1")
     .required("Quantity delta is required"),
   reason: yup.string().default("")
 });

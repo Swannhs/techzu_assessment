@@ -22,7 +22,8 @@ services:
       context: ../frontend
       dockerfile: ../docker/frontend/Dockerfile.dev
     environment:
-      VITE_API_BASE_URL: http://localhost:4000/api
+      VITE_API_BASE_URL: /api
+      VITE_PROXY_TARGET: http://backend:4000
     command: sh -c "npm install && npm run dev"
     ports:
       - "5173:5173"

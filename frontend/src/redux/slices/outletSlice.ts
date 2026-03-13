@@ -14,7 +14,7 @@ interface OutletState {
 const initialState: OutletState = {
   menu: [],
   inventory: [],
-  lastReceipt: "-",
+  lastReceipt: "",
   isLoading: false,
   currentActionKey: null
 };
@@ -88,7 +88,7 @@ const outletSlice = createSlice({
     clearOutletData(state) {
       state.menu = [];
       state.inventory = [];
-      state.lastReceipt = "-";
+      state.lastReceipt = "";
       state.isLoading = false;
       state.currentActionKey = null;
     }
@@ -96,6 +96,7 @@ const outletSlice = createSlice({
   extraReducers: (builder) => {
     builder.addCase(loadOutletDataThunk.pending, (state) => {
       state.isLoading = true;
+      state.lastReceipt = "";
     });
     builder.addCase(loadOutletDataThunk.fulfilled, (state, action) => {
       state.isLoading = false;

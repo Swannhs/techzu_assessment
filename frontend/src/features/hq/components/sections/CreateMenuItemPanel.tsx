@@ -16,9 +16,17 @@ const initialForm = {
   sku: "",
   name: "",
   description: "",
-  basePrice: "0",
-  stockDeductionUnits: "1"
+  basePrice: "",
+  stockDeductionUnits: ""
 };
+
+function isDecimalInput(value: string) {
+  return value === "" || /^\d*(\.\d{0,2})?$/.test(value);
+}
+
+function isPositiveIntegerInput(value: string) {
+  return value === "" || /^\d*$/.test(value);
+}
 
 export function CreateMenuItemPanel({
   isLoading,
@@ -34,8 +42,9 @@ export function CreateMenuItemPanel({
 
     const { data, errors: validationErrors } = await validateWithSchema(menuFormSchema, {
       ...form,
-      basePrice: Number(form.basePrice),
-      stockDeductionUnits: Number(form.stockDeductionUnits)
+      basePrice: form.basePrice === "" ? "" : Number(form.basePrice),
+      stockDeductionUnits:
+        form.stockDeductionUnits === "" ? "" : Number(form.stockDeductionUnits)
     });
 
     if (!data) {
@@ -70,29 +79,60 @@ export function CreateMenuItemPanel({
         />
         <FormError message={errors.name} />
 
-        <textarea
-          className="field min-h-20 resize-y"
-          placeholder="Description"
-          value={form.description}
-          onChange={(event) => setForm({ ...form, description: event.target.value })}
-        />
+        <label className="block space-y-2">
+          <input
+            className="field"
+            placeholder="Enter menu item description"
+            value={form.description}
+            onChange={(event) => setForm({ ...form, description: event.target.value })}
+          />
+        </label>
 
         <div className="grid grid-cols-2 gap-2">
           <input
-            className={`field ${errors.basePrice ? "field-error" : ""}`}
+            className={`field field-number ${errors.basePrice ? "field-error" : ""}`}
             type="number"
             step="0.01"
+            min="0"
+            inputMode="decimal"
             placeholder="Base price"
             value={form.basePrice}
-            onChange={(event) => setForm({ ...form, basePrice: event.target.value })}
+            onKeyDown={(event) => {
+              if (["-", "+", "e", "E"].includes(event.key)) {
+                event.preventDefault();
+              }
+            }}
+            onChange={(event) => {
+              const nextValue = event.target.value;
+
+              if (!isDecimalInput(nextValue)) {
+                return;
+              }
+
+              setForm({ ...form, basePrice: nextValue });
+            }}
           />
           <input
-            className={`field ${errors.stockDeductionUnits ? "field-error" : ""}`}
+            className={`field field-number ${errors.stockDeductionUnits ? "field-error" : ""}`}
             type="number"
             min="1"
+            inputMode="numeric"
             placeholder="Deduction units"
             value={form.stockDeductionUnits}
-            onChange={(event) => setForm({ ...form, stockDeductionUnits: event.target.value })}
+            onKeyDown={(event) => {
+              if (["-", "+", "e", "E", "."].includes(event.key)) {
+                event.preventDefault();
+              }
+            }}
+            onChange={(event) => {
+              const nextValue = event.target.value;
+
+              if (!isPositiveIntegerInput(nextValue)) {
+                return;
+              }
+
+              setForm({ ...form, stockDeductionUnits: nextValue });
+            }}
           />
         </div>
 
