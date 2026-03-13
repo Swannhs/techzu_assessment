@@ -2,14 +2,14 @@
 
 ```mermaid
 erDiagram
-    Outlet ||--o{ OutletMenuItem : assigns
-    MenuItem ||--o{ OutletMenuItem : assigned_to
-    Outlet ||--o{ Inventory : has
-    MenuItem ||--o{ Inventory : stocked_as
-    Outlet ||--o{ Sale : records
-    Sale ||--o{ SaleItem : contains
-    MenuItem ||--o{ SaleItem : referenced_by
-    Outlet ||--|| ReceiptSequence : owns
+    Outlet ||--o{ OutletMenuItem : "assigns"
+    MenuItem ||--o{ OutletMenuItem : "is assigned"
+    Outlet ||--o{ Inventory : "holds stock"
+    MenuItem ||--o{ Inventory : "tracks stock for"
+    Outlet ||--o{ Sale : "creates"
+    Sale ||--o{ SaleItem : "contains"
+    MenuItem ||--o{ SaleItem : "captured on"
+    Outlet ||--|| ReceiptSequence : "owns"
 
     Outlet {
       int id PK
@@ -74,4 +74,16 @@ erDiagram
       int lastNumber
       datetime updatedAt
     }
+
+    %% Composite unique constraints
+    %% OutletMenuItem(outletId, menuItemId)
+    %% Inventory(outletId, menuItemId)
+    %% Sale(outletId, receiptNumber)
 ```
+
+## Relationship Notes
+
+- `OutletMenuItem` is the HQ-to-outlet assignment table and stores outlet-specific price overrides.
+- `Inventory` stores stock at the outlet + menu item level.
+- `SaleItem` stores historical name and price snapshots so receipts remain correct after menu updates.
+- `ReceiptSequence` keeps one row per outlet to support concurrency-safe sequential receipt generation.
