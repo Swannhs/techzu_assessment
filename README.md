@@ -2,7 +2,7 @@
 
 Production-style full-stack assessment implementation for HQ management of multiple F&B outlets.
 
-## Overview
+## Project Overview
 
 Business flow:
 
@@ -44,6 +44,7 @@ This project provides:
       controllers/
       services/
       repositories/
+      dtos/
       middlewares/
       validators/
       types/
@@ -52,12 +53,11 @@ This project provides:
       server.ts
   frontend/
     src/
-      api/
-      components/
-      pages/
-        hq/
-        outlet/
-      App.tsx
+      app/
+      features/
+      lib/
+      redux/
+      shared/
       main.tsx
   docs/
     architecture.md
@@ -76,7 +76,7 @@ This project provides:
   README.md
 ```
 
-## Setup
+## Setup Instructions
 
 ### Prerequisites
 
@@ -100,9 +100,12 @@ Frontend env example:
 ```env
 VITE_API_BASE_URL=http://localhost:4000/api
 ```
+
 See [frontend/.env.example](/workspaces/techzu_assessment/frontend/.env.example).
 
-## Run with Docker (Local Development)
+## Running with Docker
+
+### Local development containers
 
 ```bash
 docker compose -f docker/compose.yml -f docker/compose.dev.yml up --build
@@ -126,7 +129,7 @@ This mode uses:
 - frontend `dev` target (`vite dev`)
 - bind mounts for live code reload
 
-## Run with Docker (Production-like)
+### Production-like containers
 
 ```bash
 docker compose -f docker/compose.yml -f docker/compose.prod.yml up --build
@@ -144,7 +147,7 @@ This mode uses:
 - frontend static assets served by Nginx
 - backend healthcheck before frontend startup
 
-## Local Development
+## Running Locally (without Docker)
 
 ### Backend
 
@@ -167,7 +170,28 @@ cp .env.example .env
 npm run dev
 ```
 
-## Prisma and Schema
+## Prisma Migration Instructions
+
+```bash
+cd backend
+npx prisma migrate deploy
+```
+
+For local schema changes during development:
+
+```bash
+cd backend
+npx prisma migrate dev
+```
+
+## Prisma Seed Instructions
+
+```bash
+cd backend
+npm run prisma:seed
+```
+
+## Database Schema Explanation
 
 Key files:
 
@@ -196,7 +220,27 @@ Schema guarantees:
 - DB check constraints for non-negative money/stock and valid quantities
 - indexes for reporting and outlet query patterns
 
-## API Endpoint Summary
+## Architecture Overview
+
+The backend follows a layered modular monolith:
+
+- `routes` define HTTP endpoints and attach validation middleware
+- `controllers` translate HTTP requests/responses and map DTOs
+- `services` contain business rules and transaction orchestration
+- `repositories` isolate Prisma and raw SQL access
+- `dtos` define API request/response contracts
+
+This keeps validation, transport mapping, business logic, and data access separated enough to evolve without turning the project into unnecessary microservices too early.
+
+## Assumptions and Limitations
+
+- Single company scope is assumed; multi-company tenancy is out of scope.
+- Authentication and authorization are intentionally not implemented for the assessment.
+- Taxes, discounts, refunds, and payment settlement flows are not modeled.
+- Deployment and hosting are intentionally not covered here.
+- Offline POS behavior is documented only and not implemented in code.
+
+## API Endpoints
 
 ### HQ
 
@@ -217,38 +261,6 @@ Schema guarantees:
 - `GET /api/outlets/:outletId/inventory`
 - `POST /api/outlets/:outletId/inventory/adjust`
 - `POST /api/outlets/:outletId/sales`
-
-### Health
-
-- `GET /api/health`
-
-## Architecture Notes
-
-The backend is layered:
-
-- `routes` -> `controllers` -> `services` -> `repositories`
-
-Service layer handles transaction boundaries and business rules. Repository layer encapsulates Prisma and SQL operations.
-
-## Receipt Concurrency Strategy
-
-Receipt generation is done in the sale transaction:
-
-1. upsert `ReceiptSequence` row if missing
-2. lock row using `SELECT ... FOR UPDATE`
-3. increment `lastNumber`
-4. derive formatted receipt (example: `OUTLET01-000001`)
-5. store receipt on `Sale`
-
-This prevents duplicate receipt numbers under concurrent requests.
-
-## Negative Stock Prevention
-
-The implementation uses three guards:
-
-1. Service-level validation on inventory operations
-2. Guarded SQL deduction during sales (`UPDATE ... WHERE stockQuantity >= deduction`)
-3. Database check constraint enforcing `stockQuantity >= 0`
 
 ## Testing
 
