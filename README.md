@@ -205,7 +205,6 @@ Create the persistent deployment location:
 ```bash
 sudo mkdir -p /opt/fnb-hq/shared
 sudo chown -R $USER:$USER /opt/fnb-hq
-cp .env.ec2 /opt/fnb-hq/shared/.env.ec2
 ```
 
 ### 4. Start the stack
@@ -274,6 +273,7 @@ Add these repository or environment secrets:
 - `EC2_USER`: SSH user, for example `ubuntu` or `ec2-user`
 - `EC2_SSH_KEY`: paste the full `.pem` private key content, including `BEGIN` and `END` lines
 - `EC2_KNOWN_HOSTS`: output of `ssh-keyscan -H <your-ec2-host>`
+- `EC2_ENV_FILE`: multiline production environment file content for `.env.ec2`
 
 Optional GitHub environment variable:
 
@@ -288,17 +288,21 @@ sudo mkdir -p /opt/fnb-hq/shared
 sudo chown -R $USER:$USER /opt/fnb-hq
 ```
 
-Create the persistent environment file used by remote deployments:
+Create the environment content and store it in the GitHub `EC2_ENV_FILE` secret:
 
 ```bash
-cat > /opt/fnb-hq/shared/.env.ec2 <<'EOF'
 POSTGRES_DB=fnb_hq
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=use_a_strong_password_here
 DATABASE_URL=postgresql://postgres:use_a_strong_password_here@postgres:5432/fnb_hq?schema=public
 CLIENT_ORIGIN=http://YOUR_EC2_PUBLIC_DNS
 PUBLIC_HTTP_PORT=80
-EOF
+```
+
+The deploy workflow will write that content to:
+
+```bash
+/opt/fnb-hq/shared/.env.ec2
 ```
 
 Generate the GitHub `EC2_KNOWN_HOSTS` secret value from your local machine:

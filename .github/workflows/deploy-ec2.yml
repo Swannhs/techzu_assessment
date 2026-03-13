@@ -91,6 +91,16 @@ jobs:
         run: |
           scp -i ~/.ssh/ec2_deploy_key.pem "/tmp/fnb-hq-${GITHUB_SHA}.tar.gz" "${EC2_USER}@${EC2_HOST}:/tmp/fnb-hq-${GITHUB_SHA}.tar.gz"
 
+      - name: Provision shared EC2 environment file
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+          EC2_APP_DIR: ${{ vars.EC2_APP_DIR }}
+          EC2_ENV_FILE: ${{ secrets.EC2_ENV_FILE }}
+        run: |
+          ssh -i ~/.ssh/ec2_deploy_key.pem "${EC2_USER}@${EC2_HOST}" "mkdir -p '${EC2_APP_DIR:-/opt/fnb-hq}/shared'"
+          printf '%s\n' "$EC2_ENV_FILE" | ssh -i ~/.ssh/ec2_deploy_key.pem "${EC2_USER}@${EC2_HOST}" "cat > '${EC2_APP_DIR:-/opt/fnb-hq}/shared/.env.ec2'"
+
       - name: Run remote deployment
         env:
           EC2_HOST: ${{ secrets.EC2_HOST }}
