@@ -316,6 +316,29 @@ This keeps validation, transport mapping, business logic, and data access separa
 }
 ```
 
+## Receipt Concurrency Strategy
+
+Receipt numbering is sequential per outlet and remains correct under concurrent requests because sale creation is handled inside one database transaction.
+
+1. Each outlet owns exactly one row in `ReceiptSequence`.
+2. During sale creation, the service locks that row with `SELECT ... FOR UPDATE`.
+3. The transaction increments `lastNumber` safely while the row is locked.
+4. The receipt number is generated from the locked sequence value, for example `OUTLET01-000001`.
+5. The sale is inserted using that receipt value before the transaction commits.
+6. A database unique constraint on `(outletId, receiptNumber)` provides an additional safety net.
+
+This combination prevents duplicate or skipped receipt numbers caused by concurrent sale requests hitting the same outlet at the same time.
+
+## Negative Stock Protection Strategy
+
+Negative stock is prevented through three layers working together:
+
+1. Service-level checks confirm outlet, menu assignment, and requested quantities are valid before a sale is finalized.
+2. Inventory deduction uses a guarded SQL update that only succeeds when `stockQuantity >= deductionUnits`.
+3. The database schema also enforces non-negative stock using a `CHECK` constraint.
+
+If any line item cannot deduct stock safely, the guarded update fails, the service throws an `INSUFFICIENT_STOCK` error, and the whole database transaction rolls back so no partial sale is stored.
+
 ## Testing
 
 Backend tests focus on sales flow and stock protection:
