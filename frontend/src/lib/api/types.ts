@@ -31,3 +31,23 @@ export interface TopItemByOutletRow {
   totalQuantity: number;
   totalRevenue: string;
 }
+
+export interface OutletMenuItem {
+  id: number;
+  sku: string;
+  name: string;
+  description: string | null;
+  price: string;
+  stockDeductionUnits: number;
+}
+
+export interface InventoryItem {
+  id: number;
+  menuItemId: number;
+  stockQuantity: number;
+  menuItem: {
+    id: number;
+    name: string;
+    sku: string;
+  };
+}
