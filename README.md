@@ -344,6 +344,37 @@ Core entities:
 
 See [docs/erd.md](docs/erd.md) for the full relationship view.
 
+## Database Constraints
+
+The database schema enforces integrity through:
+
+- foreign key relationships between outlets, menu items, outlet assignments, inventory, sales, and sale items
+- unique outlet code: `Outlet(code)`
+- unique menu SKU: `MenuItem(sku)`
+- unique outlet-menu assignment: `OutletMenuItem(outletId, menuItemId)`
+- unique inventory row per outlet and menu item: `Inventory(outletId, menuItemId)`
+- unique receipt number per outlet: `Sale(outletId, receiptNumber)`
+- check constraints for non-negative stock, non-negative prices, non-negative sale totals, and positive sale quantities
+
+These constraints ensure menu assignment integrity, prevent duplicate receipt numbers within the same outlet, and protect against invalid stock or pricing data.
+
+## Indexing Strategy
+
+Indexes are added on frequently queried fields, including:
+
+- `OutletMenuItem(outletId)`
+- `Inventory(outletId, menuItemId)`
+- `Sale(outletId, createdAt)`
+- `SaleItem(saleId)`
+- `SaleItem(menuItemId)`
+
+These indexes improve performance for:
+
+- outlet menu retrieval
+- inventory lookups
+- sale history queries
+- reporting queries such as revenue by outlet and top-selling items
+
 ## Database Constraints and Indexing
 
 ### Constraints
