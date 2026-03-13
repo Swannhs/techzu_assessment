@@ -99,4 +99,28 @@ describe("SaleService", () => {
 
     expect(inventory?.stockQuantity).toBe(5);
   });
+
+  it("increments receipt numbers for consecutive sales", async () => {
+    const firstSale = await saleService.createSale(outletId, {
+      items: [{ menuItemId, quantity: 1 }]
+    });
+
+    const secondSale = await saleService.createSale(outletId, {
+      items: [{ menuItemId, quantity: 1 }]
+    });
+
+    expect(firstSale.receiptNumber).toBe("OUTLET01-000001");
+    expect(secondSale.receiptNumber).toBe("OUTLET01-000002");
+
+    const inventory = await prisma.inventory.findUnique({
+      where: {
+        outletId_menuItemId: {
+          outletId,
+          menuItemId
+        }
+      }
+    });
+
+    expect(inventory?.stockQuantity).toBe(3);
+  });
 });
