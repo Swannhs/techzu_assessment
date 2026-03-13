@@ -272,7 +272,7 @@ Add these repository or environment secrets:
 
 - `EC2_HOST`: public IP or DNS of the EC2 instance
 - `EC2_USER`: SSH user, for example `ubuntu` or `ec2-user`
-- `EC2_SSH_KEY`: private SSH key used by GitHub Actions
+- `EC2_SSH_KEY`: paste the full `.pem` private key content, including `BEGIN` and `END` lines
 - `EC2_KNOWN_HOSTS`: output of `ssh-keyscan -H <your-ec2-host>`
 
 Optional GitHub environment variable:
@@ -300,6 +300,14 @@ CLIENT_ORIGIN=http://YOUR_EC2_PUBLIC_DNS
 PUBLIC_HTTP_PORT=80
 EOF
 ```
+
+Generate the GitHub `EC2_KNOWN_HOSTS` secret value from your local machine:
+
+```bash
+ssh-keyscan -H ec2-54-145-12-47.compute-1.amazonaws.com
+```
+
+GitHub Actions will write the `EC2_SSH_KEY` secret into a temporary `.pem` file at runtime and use it with `scp` and `ssh`.
 
 ### Manual deployment trigger
 
