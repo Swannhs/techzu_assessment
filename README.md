@@ -281,7 +281,21 @@ Optional GitHub environment variable:
 
 ### EC2 one-time preparation for CI/CD
 
-Install Docker and Docker Compose plugin on the instance, then prepare the app directory:
+Install Docker and Docker Compose plugin on the instance, then prepare the app directory.
+
+This repo includes a helper script for Ubuntu EC2 instances:
+
+```bash
+chmod +x deploy/ec2/install-docker-ubuntu.sh
+./deploy/ec2/install-docker-ubuntu.sh
+```
+
+Or follow Docker's official Ubuntu instructions:
+
+- Docker Engine on Ubuntu: https://docs.docker.com/engine/install/ubuntu/
+- Docker Compose plugin on Linux: https://docs.docker.com/compose/install/linux/
+
+Then prepare the app directory:
 
 ```bash
 sudo mkdir -p /opt/fnb-hq/shared
