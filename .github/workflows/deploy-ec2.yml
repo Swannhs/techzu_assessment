@@ -98,7 +98,7 @@ jobs:
           EC2_APP_DIR: ${{ vars.EC2_APP_DIR }}
           EC2_ENV_FILE: ${{ secrets.EC2_ENV_FILE }}
         run: |
-          ssh -i ~/.ssh/ec2_deploy_key.pem "${EC2_USER}@${EC2_HOST}" "mkdir -p '${EC2_APP_DIR:-/opt/fnb-hq}/shared'"
+          ssh -i ~/.ssh/ec2_deploy_key.pem "${EC2_USER}@${EC2_HOST}" "APP_DIR='${EC2_APP_DIR:-/opt/fnb-hq}'; if [ ! -d \"\$APP_DIR\" ]; then sudo mkdir -p \"\$APP_DIR/shared\" && sudo chown -R \$USER:\$USER \"\$APP_DIR\"; else mkdir -p \"\$APP_DIR/shared\"; fi"
           printf '%s\n' "$EC2_ENV_FILE" | ssh -i ~/.ssh/ec2_deploy_key.pem "${EC2_USER}@${EC2_HOST}" "cat > '${EC2_APP_DIR:-/opt/fnb-hq}/shared/.env.ec2'"
 
       - name: Run remote deployment
