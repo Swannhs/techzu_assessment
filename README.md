@@ -191,6 +191,15 @@ cd backend
 npm run prisma:seed
 ```
 
+The seed script creates:
+
+- 3 outlets
+- 6 menu items
+- outlet-specific assignments and price overrides
+- inventory per outlet
+- initial receipt sequence rows
+- sample sales and sale items so reporting screens are populated immediately
+
 ## Database Schema Explanation
 
 Key files:
@@ -348,7 +357,13 @@ cd backend
 npm test
 ```
 
-## Scaling Strategy (Summary)
+To run the same tests against the Dockerized database:
+
+```bash
+docker compose -f docker/compose.yml -f docker/compose.dev.yml exec backend sh -c 'DATABASE_URL="postgresql://postgres:postgres@postgres:5432/fnb_hq_test?schema=public" npx prisma migrate deploy && DATABASE_URL="postgresql://postgres:postgres@postgres:5432/fnb_hq_test?schema=public" npm test'
+```
+
+## Scaling Plan Overview
 
 For 10 outlets and about 100,000 transactions per month:
 
@@ -357,6 +372,36 @@ For 10 outlets and about 100,000 transactions per month:
 - add read replicas for reporting
 - add materialized views/summary tables for heavier dashboard traffic
 - partition sales tables over time if data grows
+
+More detail is available in [architecture.md](/workspaces/techzu_assessment/docs/architecture.md).
+
+## Microservice Evolution Plan
+
+If the system outgrows a modular monolith, the most natural extraction path is:
+
+- `Menu Service` for master menu management and outlet assignment
+- `Inventory Service` for stock ownership and adjustments
+- `Sales Service` for receipts, transactions, and idempotency
+- `Reporting Service` for heavy aggregations and read models
+- `Outlet Service` for outlet configuration and operational metadata
+
+The current modular monolith is still the right starting point because sales and inventory require strong transaction boundaries today. The codebase already separates routes, controllers, services, repositories, and DTOs so those seams can later become service boundaries if needed.
+
+## Offline POS Strategy
+
+Offline behavior is documentation-only in this submission, but the intended operating model is:
+
+1. The outlet POS writes transactions to a local database while internet access is unavailable.
+2. Each offline sale receives a `clientSaleUuid` so HQ sync can be idempotent.
+3. POS and KDS continue communicating on the local network through the outlet-local service or database.
+4. When connectivity returns, unsynced sales are pushed to HQ in order.
+5. HQ ignores duplicate `clientSaleUuid` values and only applies new transactions once.
+6. Inventory differences are reconciled and surfaced for operator review if local/offline state diverges from HQ.
+
+## Documentation References
+
+- ERD: [erd.md](/workspaces/techzu_assessment/docs/erd.md)
+- Architecture notes, scaling, microservices, and offline strategy: [architecture.md](/workspaces/techzu_assessment/docs/architecture.md)
 
 Detailed strategy is documented in [docs/architecture.md](/workspaces/techzu_assessment/docs/architecture.md).
 
