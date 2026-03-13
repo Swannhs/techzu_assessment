@@ -22,7 +22,7 @@ This structure keeps transport, business logic, and data access concerns separat
 
 ## ERD
 
-See [erd.md](/workspaces/techzu_assessment/docs/erd.md).
+See [erd.md](erd.md).
 
 ## Scaling Plan: 10 Outlets / 100,000 Transactions per Month
 
