@@ -1,22 +1,24 @@
 # Architecture Documentation
 
-## Architecture Summary
+## System Overview
 
-The implementation is a modular monolith:
+The system is implemented as a modular monolith:
 
 - React + TypeScript frontend
 - Express + TypeScript backend
 - Prisma data access layer
 - PostgreSQL transactional database
 
-Backend layering:
+The backend uses clear application layers:
 
 - `routes`: HTTP endpoint definitions
-- `controllers`: request/response translation
-- `services`: business logic and transaction boundaries
-- `repositories`: Prisma + SQL data access
-- `validators`: Zod schemas
-- `middlewares`: error and request handling
+- `controllers`: transport-layer orchestration and DTO mapping
+- `services`: business rules, transaction boundaries, and use-case coordination
+- `repositories`: Prisma access and raw SQL operations
+- `validators`: Zod schemas for request shape validation
+- `middlewares`: centralized validation and error handling
+
+This structure keeps transport, business logic, and data access concerns separated. It is still simple to run as one application, but each module boundary already acts like a seam for future extraction if scale or team size grows.
 
 ## ERD
 
@@ -30,8 +32,9 @@ See [erd.md](/workspaces/techzu_assessment/docs/erd.md).
 - Add PgBouncer for connection pooling and to stabilize many concurrent POS requests.
 - Keep write workloads on primary.
 - Add read replicas for report-heavy read traffic.
-- Partition `Sale` and `SaleItem` by month if retention volume grows.
+- Partition `Sale` and `SaleItem` by month if retention volume grows beyond what normal indexing handles comfortably.
 - Maintain aggressive index and vacuum monitoring.
+- Review hot indexes regularly, especially `Sale(outletId, createdAt)` and `Inventory(outletId, menuItemId)`.
 
 ### Reporting performance considerations
 
@@ -39,6 +42,7 @@ See [erd.md](/workspaces/techzu_assessment/docs/erd.md).
 - For growth, precompute daily summaries in materialized views or summary tables.
 - Cache report responses with short TTL.
 - Offload expensive analytics to replicas or a warehouse.
+- If dashboards become heavily used, move them toward append-only reporting tables updated by background jobs or events.
 
 ### Infrastructure considerations
 
@@ -47,6 +51,7 @@ See [erd.md](/workspaces/techzu_assessment/docs/erd.md).
 - Use managed PostgreSQL with backups and failover.
 - Add centralized logs, metrics, and traces.
 - Monitor lock waits on inventory updates and receipt sequence rows.
+- Tune Prisma connection handling to avoid exhausting PostgreSQL connections as backend replicas increase.
 
 ### Architectural evolution
 
@@ -54,6 +59,7 @@ See [erd.md](/workspaces/techzu_assessment/docs/erd.md).
 - Introduce outbox/event publishing for `sale.created`, `inventory.adjusted`, and `menu.assigned`.
 - Grow toward CQRS for heavy reporting workloads.
 - Introduce idempotency keys for client-side retries.
+- Add background workers for report projection updates rather than pushing more synchronous work into sale requests.
 
 ## Microservices Evolution
 
@@ -65,11 +71,18 @@ Future split candidates:
 - Reporting service
 - Outlet/config service
 
-Why these boundaries:
+Why the modular monolith is the right starting point:
+
+- sales, receipt sequencing, and inventory deduction are strongly transactional today
+- the current scale does not justify distributed systems overhead
+- a single codebase is faster to understand, test, and deliver in an assessment setting
+
+Why these services become useful later:
 
 - Sales and inventory are write-heavy with strict consistency needs.
 - Reporting has very different scaling patterns.
 - Menu and outlet config change less frequently and can be independently deployed.
+- Teams can own smaller bounded contexts with clearer responsibility boundaries.
 
 Migration approach:
 
@@ -77,6 +90,7 @@ Migration approach:
 - Add outbox events and asynchronous consumers.
 - Enforce idempotency and deduplication between services.
 - Keep data ownership per service and avoid cross-service distributed transactions.
+- Replace synchronous in-process assumptions with explicit contracts, retries, and dead-letter handling.
 
 ## Offline POS Strategy
 
@@ -92,9 +106,11 @@ Migration approach:
 - Sync to HQ when network returns.
 - Include `clientSaleUuid` for idempotent upsert at HQ.
 - Reject duplicates by unique key and return existing record.
+- Process sync in order and retain retry metadata so a partially synced outlet can resume safely.
 
 ### Reconciliation
 
 - Replay queued events in order.
 - Reconcile inventory drift if local stock diverges from HQ.
 - Preserve audit trails for offline-to-online merges.
+- Surface reconciliation exceptions to HQ operators instead of silently overwriting outlet state.
