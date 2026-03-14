@@ -42,7 +42,7 @@ echo "Applying database migrations..."
 compose exec -T backend npx prisma migrate deploy
 
 echo "Seeding development data..."
-compose exec -T backend npx prisma db seed
+compose exec -T backend npm run prisma:seed
 
 echo
 echo "Development stack is ready."

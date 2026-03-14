@@ -9,7 +9,7 @@
     "start": "node dist/server.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate deploy",
-    "prisma:seed": "prisma db seed",
+    "prisma:seed": "node --import tsx prisma/seed.ts",
     "test": "DATABASE_URL=${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/fnb_hq_test?schema=public} node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config jest.config.cjs --runInBand"
   },
   "dependencies": {
