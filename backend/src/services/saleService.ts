@@ -79,7 +79,7 @@ export class SaleService {
           throw new ApiError({
             statusCode: 409,
             code: "INSUFFICIENT_STOCK",
-            message: `Insufficient stock for menu item ${item.menuItemId}`
+            message: `Insufficient stock for ${item.itemNameSnapshot}`
           });
         }
       }

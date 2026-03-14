@@ -45,6 +45,7 @@ model OutletMenuItem {
   updatedAt     DateTime @updatedAt
   outlet        Outlet   @relation(fields: [outletId], references: [id], onDelete: Cascade)
   menuItem      MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  inventory     Inventory?
 
   @@unique([outletId, menuItemId])
   @@index([outletId])
@@ -58,6 +59,7 @@ model Inventory {
   updatedAt     DateTime @updatedAt
   outlet        Outlet   @relation(fields: [outletId], references: [id], onDelete: Cascade)
   menuItem      MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  outletMenuItem OutletMenuItem @relation(fields: [outletId, menuItemId], references: [outletId, menuItemId], onDelete: Cascade)
 
   @@unique([outletId, menuItemId])
   @@index([outletId, menuItemId])

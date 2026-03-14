@@ -330,6 +330,12 @@ Optional GitHub environment variable:
 
 - `EC2_APP_DIR` with default `/opt/fnb-hq`
 
+Current deployment behavior:
+
+- each EC2 deployment resets the previous Docker Compose stack
+- the PostgreSQL volume is removed during deployment, so previous data is cleared
+- the backend is reseeded automatically after startup so demo data is always available
+
 ## Schema Summary
 
 Core entities:
@@ -337,43 +343,12 @@ Core entities:
 - `Outlet`: physical store or branch
 - `MenuItem`: HQ-owned master menu item
 - `OutletMenuItem`: outlet assignment table with optional outlet-specific price override
-- `Inventory`: per-outlet, per-menu-item stock record
+- `Inventory`: per-outlet, per-menu-item stock record, limited to outlet-menu pairs that already exist in `OutletMenuItem`
 - `Sale`: sale header, tied to an outlet and receipt number
 - `SaleItem`: sale line item with name and price snapshots
 - `ReceiptSequence`: per-outlet counter used for sequential receipt generation
 
 See [docs/erd.md](docs/erd.md) for the full relationship view.
-
-## Database Constraints
-
-The database schema enforces integrity through:
-
-- foreign key relationships between outlets, menu items, outlet assignments, inventory, sales, and sale items
-- unique outlet code: `Outlet(code)`
-- unique menu SKU: `MenuItem(sku)`
-- unique outlet-menu assignment: `OutletMenuItem(outletId, menuItemId)`
-- unique inventory row per outlet and menu item: `Inventory(outletId, menuItemId)`
-- unique receipt number per outlet: `Sale(outletId, receiptNumber)`
-- check constraints for non-negative stock, non-negative prices, non-negative sale totals, and positive sale quantities
-
-These constraints ensure menu assignment integrity, prevent duplicate receipt numbers within the same outlet, and protect against invalid stock or pricing data.
-
-## Indexing Strategy
-
-Indexes are added on frequently queried fields, including:
-
-- `OutletMenuItem(outletId)`
-- `Inventory(outletId, menuItemId)`
-- `Sale(outletId, createdAt)`
-- `SaleItem(saleId)`
-- `SaleItem(menuItemId)`
-
-These indexes improve performance for:
-
-- outlet menu retrieval
-- inventory lookups
-- sale history queries
-- reporting queries such as revenue by outlet and top-selling items
 
 ## Database Constraints and Indexing
 
@@ -382,6 +357,7 @@ These indexes improve performance for:
 The schema and migrations explicitly enforce:
 
 - foreign keys across all major relationships
+- composite foreign key from `Inventory(outletId, menuItemId)` to `OutletMenuItem(outletId, menuItemId)`, which enforces that inventory exists only for assigned menu items at that outlet
 - unique outlet code: `Outlet(code)`
 - unique menu SKU: `MenuItem(sku)`
 - unique outlet assignment per menu item: `OutletMenuItem(outletId, menuItemId)`
@@ -434,7 +410,7 @@ These indexes support outlet menu lookup, inventory fetches, receipt history, an
 - Menu items are defined centrally and then assigned to outlets.
 - Outlets only see menu items assigned to them.
 - Outlet assignments can override the base menu price.
-- Inventory is tracked per outlet and per menu item.
+- Inventory is tracked per outlet and per menu item, and inventory rows are only valid for menu items assigned to that outlet.
 - Sale creation is transactional.
 - Sale items store historical name and price snapshots.
 - Stock cannot go below zero.

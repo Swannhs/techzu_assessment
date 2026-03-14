@@ -4,6 +4,7 @@
 erDiagram
     Outlet ||--o{ OutletMenuItem : "assigns"
     MenuItem ||--o{ OutletMenuItem : "is assigned"
+    OutletMenuItem ||--o| Inventory : "enables stock row"
     Outlet ||--o{ Inventory : "holds stock"
     MenuItem ||--o{ Inventory : "tracks stock for"
     Outlet ||--o{ Sale : "creates"
@@ -86,7 +87,7 @@ erDiagram
 - `Outlet` represents a physical branch managed by HQ.
 - `MenuItem` is the HQ-owned master menu definition.
 - `OutletMenuItem` is the assignment table that determines which menu items are available at each outlet and whether an outlet-specific price override applies.
-- `Inventory` tracks stock by outlet and menu item.
+- `Inventory` tracks stock by outlet and menu item, but only for outlet-menu pairs that already exist in `OutletMenuItem`.
 - `Sale` stores the sale header for a completed transaction.
 - `SaleItem` stores the individual line items for a sale, including historical snapshots of item name and unit price.
 - `ReceiptSequence` stores the current sequential receipt counter for each outlet.
@@ -94,7 +95,7 @@ erDiagram
 ## Relationship Notes
 
 - `OutletMenuItem` is the HQ-to-outlet assignment table and stores outlet-specific price overrides.
-- `Inventory` stores stock at the outlet + menu item level.
+- `Inventory` stores stock at the outlet + menu item level and is constrained by a composite foreign key to `OutletMenuItem(outletId, menuItemId)`.
 - `SaleItem` stores historical name and price snapshots so receipts remain correct after menu updates.
 - `ReceiptSequence` keeps one row per outlet to support concurrency-safe sequential receipt generation.
 
@@ -106,7 +107,7 @@ HQ creates items in `MenuItem`. Availability at an outlet is controlled through 
 
 ### Inventory tracking
 
-`Inventory` stores stock at the `(outletId, menuItemId)` level. Each outlet therefore has its own stock position for each assigned item, independent from other outlets.
+`Inventory` stores stock at the `(outletId, menuItemId)` level. Each outlet therefore has its own stock position for each assigned item, independent from other outlets. A composite foreign key from `Inventory(outletId, menuItemId)` to `OutletMenuItem(outletId, menuItemId)` enforces that inventory can only exist for menu items already assigned to that outlet.
 
 ### Sales and line items
 

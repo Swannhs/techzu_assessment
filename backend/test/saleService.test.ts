@@ -168,6 +168,17 @@ describe("SaleService", () => {
     expect(lastReceiptNumber).toBe(0);
   });
 
+  it("returns the item name when stock is insufficient", async () => {
+    await expect(
+      saleService.createSale(1, {
+        items: [{ menuItemId: 7, quantity: 8 }]
+      })
+    ).rejects.toMatchObject({
+      code: "INSUFFICIENT_STOCK",
+      message: "Insufficient stock for Classic Burger"
+    });
+  });
+
   it("increments receipt numbers for consecutive sales", async () => {
     const firstSale = await saleService.createSale(1, {
       items: [{ menuItemId: 7, quantity: 1 }]
@@ -193,6 +204,7 @@ describe("SaleService", () => {
 
     expect(sale.saleItems).toHaveLength(1);
     expect(sale.saleItems[0]?.quantity).toBe(3);
+    expect(sale.saleItems[0]?.itemNameSnapshot).toBe("Classic Burger");
     expect(sale.saleItems[0]?.lineTotal.toString()).toBe("39");
     expect(inventoryQuantity).toBe(2);
   });
